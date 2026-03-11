@@ -48,7 +48,7 @@
   <h1>Admin — Orders</h1>
   <div class="muted">Default: delivered hidden • Click an order for details</div>
   <div style="margin-bottom:12px;">
-    <a href="products.html">→ Manage Products</a>
+    <a href="index.html">→ Admin Menu</a>
   </div>
 </header>
 
@@ -134,6 +134,7 @@
     const BASE = getRepoBasePath(); // "/team-store" on your site
     const ADMIN_PRODUCTS_URL = `${BASE}/admin/products.html`;
     const ADMIN_ORDERS_URL   = `${BASE}/admin/orders.html`;
+    const ADMIN_INDEX_URL = `${BASE}/admin/index.html`;
 
   async function requireAdmin() {
     const { data: { user } } = await supabase.auth.getUser();
@@ -141,7 +142,7 @@
     // Not logged in → send to products page (which has login UI)
     if (!user) {
       const next = encodeURIComponent(window.location.pathname + window.location.search);
-      window.location.href = `${ADMIN_PRODUCTS_URL}?next=${next}`;
+      window.location.href = `${ADMIN_INDEX_URL}?next=${next}`;
       return false;
     }
     // Logged in but not an admin → block
@@ -155,7 +156,7 @@
       alert("Not authorized.");
       await supabase.auth.signOut();
       const next = encodeURIComponent(window.location.pathname + window.location.search);
-      window.location.href = `${ADMIN_PRODUCTS_URL}?next=${next}`;
+      window.location.href = `${ADMIN_INDEX_URL}?next=${next}`;
       return false;
     }
 

@@ -1,0 +1,450 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Admin — Finance</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; margin:0; background:#f6f7fb; color:#111; }
+    header { padding:16px 18px; background:#111; color:#fff; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    header h1 { font-size:16px; margin:0; font-weight:800; }
+    header a { color:#fff; text-decoration:none; opacity:.9; font-size:13px; }
+    main { max-width:1100px; margin: 14px auto; padding: 0 14px; display:grid; grid-template-columns: 1.2fr .8fr; gap:14px; }
+    @media (max-width: 980px){ main{ grid-template-columns: 1fr; } }
+    .card { background:#fff; border:1px solid #eee; border-radius:10px; padding:12px; box-shadow: 0 1px 10px rgba(0,0,0,.06); }
+    .row { display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; }
+    label { display:block; font-size:12px; color:#444; margin: 6px 0 4px; }
+    input[type=text], input[type=number], input[type=date], select, textarea { width:100%; padding:8px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box; }
+    textarea { min-height:70px; resize:vertical; }
+    .btn { padding:8px 12px; cursor:pointer; border:1px solid #ccc; background:#fff; border-radius:8px; font-weight:700; }
+    .btn-primary { background:#0b74de; color:#fff; border-color:#0b6ad1; }
+    .muted { color:#666; font-size:0.9rem; }
+    .ok { color:#0a7a2f; font-size: 0.95rem; white-space:pre-wrap; }
+    .err { color:#b00020; font-size: 0.95rem; white-space:pre-wrap; }
+    table { width:100%; border-collapse:collapse; margin-top:10px; }
+    th,td { border-bottom:1px solid #eee; padding:8px; text-align:left; font-size: 13px; }
+    th { background:#fafafa; font-size:12px; color:#444; }
+    .hidden { display:none; }
+    .w160{ width:160px; } .w200{ width:200px; } .w240{ width:240px; } .w320{ width:320px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Admin — Finance</h1>
+  <div class="row" style="align-items:center;">
+    <a id="lnkProducts" href="#">Products</a>
+    <a id="lnkOrders" href="#">Orders</a>
+    <a id="lnkContacts" href="#" style="opacity:.85;">Contacts</a>
+    <button id="btnSignOut" class="btn" style="border-color:#444; background:#111; color:#fff;">Sign out</button>
+  </div>
+</header>
+
+<main>
+  <section class="card">
+    <div class="row" style="justify-content:space-between; align-items:center;">
+      <div>
+        <div style="font-weight:900;">Add Transaction</div>
+        <div class="muted">Income requires a Payee (contact). Amount is stored positive.</div>
+      </div>
+      <div class="muted" id="whoami"></div>
+    </div>
+
+    <div id="msgOk" class="ok" style="margin-top:10px;"></div>
+    <div id="msgErr" class="err" style="margin-top:10px;"></div>
+
+    <div class="row" style="margin-top:10px;">
+      <div class="w200">
+        <label>Date</label>
+        <input id="txn_date" type="date" />
+      </div>
+
+      <div class="w160">
+        <label>Type</label>
+        <select id="txn_type">
+          <option value="income">Income</option>
+          <option value="expense">Expense</option>
+        </select>
+      </div>
+
+      <div class="w240">
+        <label>Category</label>
+        <select id="category">
+          <!-- enum values -->
+          <option value="player_fees">Player Fees</option>
+          <option value="fundraiser">Fundraiser</option>
+          <option value="team_store_sales">Team Store Sales</option>
+          <option value="sponsorships">Sponsorships</option>
+          <option value="donations">Donations</option>
+          <option value="tournament_fees">Tournament Fees</option>
+          <option value="facilities">Facilities</option>
+          <option value="equipment">Equipment</option>
+          <option value="apparel_vendor">Apparel Vendor</option>
+          <option value="misc">Misc</option>
+        </select>
+      </div>
+
+      <div class="w160">
+        <label>Source</label>
+        <select id="source">
+          <option value="venmo">Venmo</option>
+          <option value="cash">Cash</option>
+          <option value="ally">Ally</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div class="w160">
+        <label>Amount</label>
+        <input id="amount" type="text" placeholder="200.00 or -350.00" />
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:8px;">
+      <div class="w320" style="flex:1; min-width:260px;">
+        <label>Payee (Contact) <span class="muted" id="payeeReq">(required for income)</span></label>
+        <input id="payee" type="text" placeholder="Type name…" list="payeeList" autocomplete="off" />
+        <datalist id="payeeList"></datalist>
+        <div class="muted" id="payeeHint" style="margin-top:4px;"></div>
+      </div>
+
+      <div style="flex:1; min-width:260px;">
+        <label>Description</label>
+        <input id="description" type="text" placeholder="Superbowl Squares - Lucas" />
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:8px;">
+      <div style="flex:1;">
+        <label>Reference (optional)</label>
+        <input id="reference" type="text" placeholder="order_id, receipt #, etc" />
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <button id="btnSave" class="btn btn-primary">Save</button>
+      <button id="btnClear" class="btn">Clear</button>
+      <button id="btnCreateContact" class="btn" style="margin-left:auto;">Create Contact…</button>
+    </div>
+  </section>
+
+  <aside class="card">
+    <div style="font-weight:900;">Summary (client-side)</div>
+    <div class="muted">Runs a simple breakdown for a date range.</div>
+
+    <div class="row" style="margin-top:10px;">
+      <div class="w200">
+        <label>Start</label>
+        <input id="sum_start" type="date" />
+      </div>
+      <div class="w200">
+        <label>End</label>
+        <input id="sum_end" type="date" />
+      </div>
+      <div>
+        <button id="btnRunSummary" class="btn btn-primary">Run</button>
+      </div>
+    </div>
+
+    <div id="sumTotals" class="muted" style="margin-top:10px;"></div>
+
+    <table>
+      <thead>
+        <tr><th>Category</th><th>Type</th><th>Total</th></tr>
+      </thead>
+      <tbody id="sumBody">
+        <tr><td colspan="3" class="muted">Run summary to see results.</td></tr>
+      </tbody>
+    </table>
+
+    <div id="sumErr" class="err" style="margin-top:10px;"></div>
+  </aside>
+</main>
+
+<script type="module">
+  // === SAME as products.html ===
+  const SUPABASE_URL = "https://oaxwmguhucxaucpyofil.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_jD2x3piN7xnCIjca94gYFA_zzkbjS7T";
+
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  function getRepoBasePath() {
+    const parts = window.location.pathname.split("/").filter(Boolean);
+    return parts.length ? `/${parts[0]}` : "";
+  }
+  const BASE = getRepoBasePath();
+
+  const ADMIN_PRODUCTS_URL = `${BASE}/admin/products.html`;
+  const ADMIN_ORDERS_URL   = `${BASE}/admin/orders.html`;
+  const ADMIN_CONTACTS_URL = `${BASE}/admin/contacts.html`; // you'll create next
+  const ADMIN_FINANCE_URL  = `${BASE}/admin/finance.html`;
+
+  const $ = (id) => document.getElementById(id);
+
+  $("lnkProducts").href = ADMIN_PRODUCTS_URL;
+  $("lnkOrders").href = ADMIN_ORDERS_URL;
+  $("lnkContacts").href = ADMIN_CONTACTS_URL;
+
+  function qsNext() {
+    const next = `${BASE}${window.location.pathname.replace(BASE,"")}${window.location.search || ""}`;
+    // If pathname already includes BASE, keep it; simplest is just full path+query:
+    return encodeURIComponent(window.location.pathname + window.location.search);
+  }
+
+  async function requireAuth() {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error) console.warn(error);
+    if (!user) {
+      window.location.href = `${ADMIN_PRODUCTS_URL}?next=${qsNext()}`;
+      return null;
+    }
+    return user;
+  }
+
+  function todayISO() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    const da = String(d.getDate()).padStart(2,"0");
+    return `${y}-${m}-${da}`;
+  }
+  function monthStartISO() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    return `${y}-${m}-01`;
+  }
+  function money(n) {
+    return (Math.round(Number(n||0)*100)/100).toFixed(2);
+  }
+
+  // form state
+  let currentUser = null;
+  let selectedPayeeId = null;
+  let lastPayeeResults = [];
+
+  function setMsg(ok, err) {
+    $("msgOk").textContent = ok || "";
+    $("msgErr").textContent = err || "";
+  }
+
+  function setPayeeReqUI() {
+    $("payeeReq").textContent = ($("txn_type").value === "income") ? "(required for income)" : "(optional for expense)";
+  }
+
+  function parseAmount(s) {
+    s = String(s||"").trim();
+    if (!s) return null;
+    const cleaned = s.replace(/[\$,]/g,"");
+    const parenNeg = cleaned.includes("(") && cleaned.includes(")");
+    const num = Number(cleaned.replace(/[()]/g,""));
+    if (!isFinite(num) || num === 0) return null;
+    return { value: Math.abs(num), negative: parenNeg || num < 0 };
+  }
+
+  async function searchContacts(q) {
+    // requires RLS policy allowing your signed-in admin to SELECT contacts
+    const { data, error } = await supabase
+      .from("contacts")
+      .select("id,full_name")
+      .ilike("full_name", `%${q}%`)
+      .order("full_name", { ascending: true })
+      .limit(12);
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  function renderPayeeList(items) {
+    const dl = $("payeeList");
+    dl.innerHTML = "";
+    items.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c.full_name;
+      dl.appendChild(opt);
+    });
+  }
+
+  let payeeTimer = null;
+  async function handlePayeeInput() {
+    const q = ($("payee").value || "").trim();
+    selectedPayeeId = null;
+    $("payeeHint").textContent = q ? "Searching…" : "";
+    if (!q) { $("payeeList").innerHTML = ""; $("payeeHint").textContent = ""; return; }
+
+    try {
+      const results = await searchContacts(q);
+      lastPayeeResults = results;
+      renderPayeeList(results);
+
+      const exact = results.find(x => x.full_name.toLowerCase() === q.toLowerCase());
+      if (exact) {
+        selectedPayeeId = exact.id;
+        $("payeeHint").textContent = `Selected: ${exact.full_name}`;
+      } else {
+        $("payeeHint").textContent = results.length ? "Pick from suggestions, or create a new contact." : "No match. Create a new contact.";
+      }
+    } catch (e) {
+      console.error(e);
+      $("payeeHint").textContent = "Contact search failed (RLS?).";
+    }
+  }
+
+  $("payee").addEventListener("input", () => {
+    if (payeeTimer) clearTimeout(payeeTimer);
+    payeeTimer = setTimeout(handlePayeeInput, 200);
+  });
+
+  $("payee").addEventListener("change", () => {
+    const q = ($("payee").value || "").trim();
+    const exact = lastPayeeResults.find(x => x.full_name.toLowerCase() === q.toLowerCase());
+    selectedPayeeId = exact ? exact.id : null;
+  });
+
+  $("txn_type").addEventListener("change", setPayeeReqUI);
+
+  $("btnSignOut").addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    location.href = ADMIN_PRODUCTS_URL;
+  });
+
+  $("btnCreateContact").addEventListener("click", () => {
+    const prefill = encodeURIComponent(($("payee").value || "").trim());
+    const next = encodeURIComponent(ADMIN_FINANCE_URL);
+    window.location.href = `${ADMIN_CONTACTS_URL}?prefill=${prefill}&next=${next}`;
+  });
+
+  $("btnClear").addEventListener("click", () => {
+    $("txn_date").value = todayISO();
+    $("txn_type").value = "income";
+    $("category").value = "player_fees";
+    $("source").value = "venmo";
+    $("amount").value = "";
+    $("payee").value = "";
+    $("description").value = "";
+    $("reference").value = "";
+    selectedPayeeId = null;
+    $("payeeHint").textContent = "";
+    setPayeeReqUI();
+    setMsg("","");
+  });
+
+  $("btnSave").addEventListener("click", async () => {
+    setMsg("","");
+
+    const txn_date = $("txn_date").value;
+    const txn_type = $("txn_type").value;        // enum income/expense
+    const category = $("category").value;        // enum values
+    const source = $("source").value;            // enum values
+    const amt = parseAmount($("amount").value);
+    const description = ($("description").value || "").trim();
+    const reference = (($("reference").value || "").trim()) || null;
+
+    if (!txn_date) return setMsg("", "Date is required.");
+    if (!amt) return setMsg("", "Enter a valid amount (e.g. 200.00 or -350.00).");
+
+    if (txn_type === "income" && !selectedPayeeId) {
+      return setMsg("", "Payee is required for Income. Select an existing contact or create one.");
+    }
+
+    // store positive amount; txn_type determines direction
+    const payload = {
+      txn_date,
+      txn_type,
+      category,
+      source,
+      amount: amt.value,
+      description: description || "",
+      reference,
+      payee_id: selectedPayeeId || null
+    };
+
+    $("btnSave").disabled = true;
+    try {
+      const { error } = await supabase.from("transactions").insert(payload);
+      if (error) throw error;
+
+      setMsg("Saved ✅", "");
+      // keep date/type/category/source/payee for quick entry, clear money/details
+      $("amount").value = "";
+      $("description").value = "";
+      $("reference").value = "";
+    } catch (e) {
+      setMsg("", "Save failed: " + (e.message || JSON.stringify(e)));
+    }
+    $("btnSave").disabled = false;
+  });
+
+  // Summary: fetch rows and aggregate in JS
+  $("btnRunSummary").addEventListener("click", async () => {
+    $("sumErr").textContent = "";
+    $("sumTotals").textContent = "Loading…";
+    $("sumBody").innerHTML = `<tr><td colspan="3" class="muted">Loading…</td></tr>`;
+
+    const start = $("sum_start").value;
+    const end = $("sum_end").value;
+    if (!start || !end) { $("sumErr").textContent = "Start and End are required."; return; }
+
+    try {
+      // inclusive end: use end+1 day for lt
+      const endDt = new Date(end + "T00:00:00");
+      endDt.setDate(endDt.getDate() + 1);
+      const endPlus = endDt.toISOString().slice(0,10);
+
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("txn_type,category,amount,txn_date")
+        .gte("txn_date", start)
+        .lt("txn_date", endPlus);
+
+      if (error) throw error;
+
+      const rows = data || [];
+      let income = 0, expense = 0;
+      const by = new Map(); // key `${category}|${txn_type}` => total
+
+      for (const r of rows) {
+        const t = Number(r.amount || 0);
+        if (r.txn_type === "income") income += t;
+        else expense += t;
+
+        const k = `${r.category}|${r.txn_type}`;
+        by.set(k, (by.get(k) || 0) + t);
+      }
+
+      $("sumTotals").innerHTML = `<b>Income:</b> $${money(income)} &nbsp; <b>Expense:</b> $${money(expense)} &nbsp; <b>Net:</b> $${money(income-expense)}`;
+
+      const out = Array.from(by.entries())
+        .map(([k,total]) => {
+          const [cat, typ] = k.split("|");
+          return { cat, typ, total };
+        })
+        .sort((a,b) => (a.typ.localeCompare(b.typ) || a.cat.localeCompare(b.cat)));
+
+      $("sumBody").innerHTML = out.length
+        ? out.map(r => `<tr><td>${r.cat}</td><td>${r.typ}</td><td>$${money(r.total)}</td></tr>`).join("")
+        : `<tr><td colspan="3" class="muted">No transactions in range.</td></tr>`;
+    } catch (e) {
+      $("sumErr").textContent = "Summary failed: " + (e.message || JSON.stringify(e));
+      $("sumTotals").textContent = "Error.";
+      $("sumBody").innerHTML = `<tr><td colspan="3" class="muted">Error.</td></tr>`;
+    }
+  });
+
+  // init
+  document.addEventListener("DOMContentLoaded", async () => {
+    currentUser = await requireAuth();
+    if (!currentUser) return;
+
+    $("whoami").textContent = currentUser.email || currentUser.id;
+
+    $("txn_date").value = todayISO();
+    $("sum_start").value = monthStartISO();
+    $("sum_end").value = todayISO();
+    setPayeeReqUI();
+  });
+</script>
+
+</body>
+</html

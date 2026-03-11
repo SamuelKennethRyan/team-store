@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Admin Dashboard</title>
+
+<style>
+body {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  margin: 0;
+  background: #f6f7fb;
+}
+
+header {
+  background: #111;
+  color: #fff;
+  padding: 16px 20px;
+  font-weight: 700;
+}
+
+main {
+  max-width: 900px;
+  margin: 30px auto;
+  padding: 0 16px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+  margin-bottom: 20px;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  margin-top: 8px;
+}
+
+button {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+button.secondary {
+  background: #e5e5e5;
+  color: #111;
+}
+
+.grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.menu-card {
+  padding: 16px;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: .15s;
+}
+
+.menu-card:hover {
+  background: #fafafa;
+}
+
+.error {
+  color: #b00020;
+  margin-top: 10px;
+}
+</style>
+</head>
+<body>
+
+<header>
+  Admin
+</header>
+
+<main>
+
+<div id="loginCard" class="card">
+  <h2>Admin Login</h2>
+  <label>Enter Admin Passcode</label>
+  <input type="password" id="passcodeInput" />
+  <button id="loginBtn">Login</button>
+  <div id="loginError" class="error"></div>
+</div>
+
+<div id="menuCard" class="card" style="display:none;">
+  <h2>Admin Menu</h2>
+  <div class="grid">
+    <div class="menu-card" data-link="/admin/orders.html">Orders</div>
+    <div class="menu-card" data-link="/admin/products.html">Products</div>
+    <div class="menu-card" data-link="/admin/finance.html">Finance</div>
+    <div class="menu-card" data-link="/admin/contacts.html">Contacts</div>
+    <div class="menu-card" data-link="/admin/players.html">Players</div>
+  </div>
+  <button class="secondary" id="logoutBtn">Log Out</button>
+</div>
+
+</main>
+
+<script>
+const SUPABASE_URL = "https://oaxwmguhucxaucpyofil.supabase.co";
+
+const ADMIN_OK_KEY = "admin_ok";
+const ADMIN_TOKEN_KEY = "admin_token";
+
+const loginCard = document.getElementById("loginCard");
+const menuCard = document.getElementById("menuCard");
+const loginBtn = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const errorDiv = document.getElementById("loginError");
+const passInput = document.getElementById("passcodeInput");
+
+const params = new URLSearchParams(location.search);
+const next = params.get("next");
+
+function isValidNext(url) {
+  return url && url.startsWith("/admin/");
+}
+
+function showMenu() {
+  loginCard.style.display = "none";
+  menuCard.style.display = "block";
+}
+
+function showLogin() {
+  loginCard.style.display = "block";
+  menuCard.style.display = "none";
+}
+
+if (sessionStorage.getItem(ADMIN_OK_KEY) === "1") {
+  showMenu();
+} else {
+  showLogin();
+}
+
+loginBtn.addEventListener("click", async () => {
+  errorDiv.textContent = "";
+  const passcode = passInput.value.trim();
+  if (!passcode) return;
+
+  loginBtn.disabled = true;
+
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/admin-login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ passcode })
+    });
+
+    if (!resp.ok) {
+      throw new Error("Invalid passcode");
+    }
+
+    const data = await resp.json();
+
+    if (!data.ok || !data.token) {
+      throw new Error("Invalid login");
+    }
+
+    sessionStorage.setItem(ADMIN_OK_KEY, "1");
+    sessionStorage.setItem(ADMIN_TOKEN_KEY, data.token);
+
+    if (isValidNext(next)) {
+      location.replace(next);
+      return;
+    }
+
+    showMenu();
+
+  } catch (err) {
+    errorDiv.textContent = "Login failed.";
+  }
+
+  loginBtn.disabled = false;
+});
+
+logoutBtn.addEventListener("click", () => {
+  sessionStorage.removeItem(ADMIN_OK_KEY);
+  sessionStorage.removeItem(ADMIN_TOKEN_KEY);
+  location.reload();
+});
+
+document.querySelectorAll(".menu-card").forEach(card => {
+  card.addEventListener("click", () => {
+    location.href = card.getAttribute("data-link");
+  });
+});
+</script>
+
+</body>
+</html>

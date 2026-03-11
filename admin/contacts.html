@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Admin — Contacts</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; margin:0; background:#f6f7fb; color:#111; }
+    header { padding:16px 18px; background:#111; color:#fff; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    header h1 { font-size:16px; margin:0; font-weight:800; }
+    header a { color:#fff; text-decoration:none; opacity:.9; font-size:13px; }
+    main { max-width:1200px; margin:14px auto; padding:0 14px; display:grid; grid-template-columns: 1fr 1fr; gap:14px; }
+    @media (max-width: 980px){ main{ grid-template-columns: 1fr; } }
+    .card { background:#fff; border:1px solid #eee; border-radius:10px; padding:12px; box-shadow: 0 1px 10px rgba(0,0,0,.06); }
+    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    label { display:block; font-size:12px; color:#444; margin:6px 0 4px; }
+    input[type=text], input[type=number], input[type=date], select, textarea {
+      width:100%; padding:8px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;
+    }
+    textarea { min-height:70px; resize:vertical; }
+    .btn { padding:8px 12px; cursor:pointer; border:1px solid #ccc; background:#fff; border-radius:8px; font-weight:700; }
+    .btn-primary { background:#0b74de; color:#fff; border-color:#0b6ad1; }
+    .btn-danger { color:#a00; border-color:#f0c6c6; }
+    .muted { color:#666; font-size:0.9rem; }
+    .ok { color:#0a7a2f; font-size: 0.95rem; white-space:pre-wrap; }
+    .err { color:#b00020; font-size: 0.95rem; white-space:pre-wrap; white-space:pre-wrap; }
+    table { width:100%; border-collapse:collapse; margin-top:10px; }
+    th,td { border-bottom:1px solid #eee; padding:8px; text-align:left; font-size: 13px; vertical-align:top; }
+    th { background:#fafafa; font-size:12px; color:#444; }
+    tr:hover td { background:#fcfcff; }
+    .pill { display:inline-block; padding:2px 8px; border-radius:999px; background:#eef0ff; color:#2a2f77; font-size:11px; }
+    .small { font-size: 12px; padding:6px 8px; }
+    .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    @media (max-width: 980px){ .grid2{ grid-template-columns: 1fr; } }
+    .req { color:#b00020; font-weight:800; }
+  </style>
+</head>
+
+<body>
+<header>
+  <h1>Admin — Contacts</h1>
+  <div class="row">
+    <a id="lnkMenu" href="#">Admin Menu</a>
+    <a id="lnkFinance" href="#" style="opacity:.85;">Finance</a>
+    <a id="lnkOrders" href="#" style="opacity:.85;">Orders</a>
+    <a id="lnkProducts" href="#" style="opacity:.85;">Products</a>
+    <button id="btnSignOut" class="btn small" style="border-color:#444; background:#111; color:#fff;">Sign out</button>
+  </div>
+</header>
+
+<main>
+  <!-- LEFT: list -->
+  <section class="card">
+    <div class="row" style="justify-content:space-between;">
+      <div>
+        <div style="font-weight:900;">Contacts</div>
+        <div class="muted">Search and click a row to edit.</div>
+      </div>
+      <div class="row">
+        <span class="pill" id="whoami">…</span>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <div style="flex:1; min-width:240px;">
+        <label>Search</label>
+        <input id="search" type="text" placeholder="Name or company…" />
+      </div>
+      <div>
+        <button id="btnRefresh" class="btn">Refresh</button>
+      </div>
+      <div>
+        <button id="btnNew" class="btn btn-primary">+ New</button>
+      </div>
+      <div id="backWrap" style="margin-left:auto; display:none;">
+        <a id="lnkBack" class="btn" href="#">Back</a>
+      </div>
+    </div>
+
+    <div id="listErr" class="err" style="margin-top:10px;"></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:34%;">Name</th>
+          <th style="width:16%;">Type</th>
+          <th style="width:26%;">Player</th>
+          <th style="width:24%;">Phone / Email</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr><td colspan="4" class="muted">Loading…</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- RIGHT: editor -->
+  <aside class="card">
+    <div class="row" style="justify-content:space-between;">
+      <div>
+        <div style="font-weight:900;" id="editorTitle">New Contact</div>
+        <div class="muted">Relationship is required if a player is selected.</div>
+      </div>
+      <div class="row">
+        <button id="btnClear" class="btn">Clear</button>
+      </div>
+    </div>
+
+    <div id="msgOk" class="ok" style="margin-top:10px;"></div>
+    <div id="msgErr" class="err" style="margin-top:10px;"></div>
+
+    <input type="hidden" id="contact_id" />
+
+    <div class="grid2" style="margin-top:10px;">
+      <div>
+        <label>Full name <span class="req">*</span></label>
+        <input id="full_name" type="text" placeholder="Jill Taylor" />
+      </div>
+      <div>
+        <label>Contact type <span class="req">*</span></label>
+        <select id="contact_type">
+          <option value="">Select…</option>
+          <option value="friends">Friends</option>
+          <option value="family">Family</option>
+          <option value="sponsor">Sponsor</option>
+          <option value="vendor">Vendor</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Phone</label>
+        <input id="phone" type="text" placeholder="(###) ###-####" />
+      </div>
+      <div>
+        <label>Email</label>
+        <input id="email" type="text" placeholder="name@email.com" />
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-top:10px;">
+      <div>
+        <label>Player (optional)</label>
+        <select id="player_id">
+          <option value="">— None —</option>
+        </select>
+      </div>
+      <div>
+        <label>Relationship <span id="relReq" class="muted">(required if player selected)</span></label>
+        <input id="relationship" type="text" placeholder="Mom / Dad / Guardian / Sponsor contact…" />
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-top:10px;">
+      <div>
+        <label>Company name (optional)</label>
+        <input id="company_name" type="text" placeholder="McNeal Roofing" />
+      </div>
+      <div>
+        <label>Sponsor level (optional)</label>
+        <input id="sponsor_level" type="text" placeholder="Gold / Silver / Bronze" />
+      </div>
+    </div>
+
+    <div style="margin-top:10px;">
+      <label>Logo source (optional)</label>
+      <input id="logo_source" type="text" placeholder="URL or filename" />
+    </div>
+
+    <div style="margin-top:10px;">
+      <label>Sponsor message (optional)</label>
+      <textarea id="sponsor_message" placeholder="Short blurb to show on sponsor page…"></textarea>
+    </div>
+
+    <div class="row" style="margin-top:12px;">
+      <button id="btnSave" class="btn btn-primary">Save</button>
+      <button id="btnDelete" class="btn btn-danger" style="margin-left:auto;">Delete</button>
+    </div>
+  </aside>
+</main>
+
+<script type="module">
+  // Same as products.html
+  const SUPABASE_URL = "https://oaxwmguhucxaucpyofil.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_jD2x3piN7xnCIjca94gYFA_zzkbjS7T";
+
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  function getRepoBasePath() {
+    const parts = window.location.pathname.split("/").filter(Boolean);
+    return parts.length ? `/${parts[0]}` : "";
+  }
+  const BASE = getRepoBasePath();
+
+  const ADMIN_INDEX_URL    = `${BASE}/admin/index.html`;
+  const ADMIN_PRODUCTS_URL = `${BASE}/admin/products.html`;
+  const ADMIN_ORDERS_URL   = `${BASE}/admin/orders.html`;
+  const ADMIN_FINANCE_URL  = `${BASE}/admin/finance.html`;
+  const ADMIN_CONTACTS_URL = `${BASE}/admin/contacts.html`;
+
+  const $ = (id) => document.getElementById(id);
+
+  $("lnkMenu").href = ADMIN_INDEX_URL;
+  $("lnkProducts").href = ADMIN_PRODUCTS_URL;
+  $("lnkOrders").href = ADMIN_ORDERS_URL;
+  $("lnkFinance").href = ADMIN_FINANCE_URL;
+
+  // query params
+  const params = new URLSearchParams(window.location.search);
+  const prefill = (params.get("prefill") || "").trim();
+  const next = (params.get("next") || "").trim();
+
+  function safeNext(n) {
+    // allow only admin relative paths or repo-prefixed admin paths
+    if (!n) return null;
+    if (n.includes("://")) return null;
+    if (n.startsWith("/admin/")) return n;
+    if (n.startsWith(`${BASE}/admin/`)) return n;
+    return null;
+  }
+
+  const safe = safeNext(next);
+  if (safe) {
+    $("backWrap").style.display = "block";
+    $("lnkBack").href = safe;
+    $("lnkBack").textContent = "Back";
+  }
+
+  function buildNextSelf() {
+    return encodeURIComponent(window.location.pathname + window.location.search);
+  }
+
+  async function requireAuth() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      window.location.replace(`${ADMIN_INDEX_URL}?next=${buildNextSelf()}`);
+      return null;
+    }
+    return user;
+  }
+
+  let currentUser = null;
+  let contacts = [];
+  let players = [];
+
+  function setMsg(ok, err) {
+    $("msgOk").textContent = ok || "";
+    $("msgErr").textContent = err || "";
+  }
+  function setListErr(t) {
+    $("listErr").textContent = t || "";
+  }
+
+  function escapeHtml(s) {
+    return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  }
+
+  function clearEditor() {
+    $("editorTitle").textContent = "New Contact";
+    $("contact_id").value = "";
+    $("full_name").value = "";
+    $("contact_type").value = "";
+    $("phone").value = "";
+    $("email").value = "";
+    $("player_id").value = "";
+    $("relationship").value = "";
+    $("company_name").value = "";
+    $("sponsor_level").value = "";
+    $("logo_source").value = "";
+    $("sponsor_message").value = "";
+    setMsg("", "");
+    updateRelationshipRequiredUI();
+  }
+
+  function updateRelationshipRequiredUI() {
+    const needs = !!$("player_id").value;
+    $("relReq").innerHTML = needs ? '<span class="req">*</span> required' : '(required if player selected)';
+  }
+
+  $("player_id").addEventListener("change", updateRelationshipRequiredUI);
+
+  function getEditorPayload() {
+    const id = $("contact_id").value || null;
+    const full_name = ($("full_name").value || "").trim();
+    const contact_type = ($("contact_type").value || "").trim();
+
+    const phone = ($("phone").value || "").trim() || null;
+    const email = ($("email").value || "").trim() || null;
+
+    const player_id = ($("player_id").value || "").trim() || null;
+    const relationship = ($("relationship").value || "").trim() || null;
+
+    const company_name = ($("company_name").value || "").trim() || null;
+    const sponsor_level = ($("sponsor_level").value || "").trim() || null;
+    const logo_source = ($("logo_source").value || "").trim() || null;
+    const sponsor_message = ($("sponsor_message").value || "").trim() || null;
+
+    return {
+      id, full_name, contact_type, phone, email,
+      player_id, relationship,
+      company_name, sponsor_level, logo_source, sponsor_message
+    };
+  }
+
+  function validatePayload(p) {
+    if (!p.full_name) return "Full name is required.";
+    if (!p.contact_type) return "Contact type is required.";
+    if (p.player_id && (!p.relationship || !p.relationship.trim())) {
+      return "Relationship is required when Player is selected.";
+    }
+    return null;
+  }
+
+  async function loadPlayers() {
+    // needs admin RLS policy on players (you added)
+    const { data, error } = await supabase
+      .from("players")
+      .select("id,full_name,player_number,active")
+      .order("full_name", { ascending: true });
+
+    if (error) throw error;
+    players = data || [];
+    renderPlayerDropdown();
+  }
+
+  function renderPlayerDropdown() {
+    const sel = $("player_id");
+    const current = sel.value || "";
+    const opts = ['<option value="">— None —</option>'];
+
+    players
+      .filter(p => p.active === true)
+      .forEach(p => {
+        const num = (p.player_number ?? "");
+        const label = num ? `${p.full_name} (#${num})` : p.full_name;
+        opts.push(`<option value="${p.id}">${escapeHtml(label)}</option>`);
+      });
+
+    sel.innerHTML = opts.join("");
+    sel.value = current; // keep selection if still valid
+  }
+
+  async function loadContacts() {
+    setListErr("");
+    $("tbody").innerHTML = `<tr><td colspan="4" class="muted">Loading…</td></tr>`;
+
+    // minimal fields for list; include player_id so we can show name
+    const { data, error } = await supabase
+      .from("contacts")
+      .select("id,full_name,contact_type,phone,email,player_id,company_name")
+      .order("full_name", { ascending: true })
+      .limit(500);
+
+    if (error) throw error;
+    contacts = data || [];
+    renderList();
+  }
+
+  function playerNameById(id) {
+    if (!id) return "";
+    const p = players.find(x => x.id === id);
+    return p ? p.full_name : "";
+  }
+
+  function renderList() {
+    const q = ($("search").value || "").trim().toLowerCase();
+    const rows = contacts.filter(c => {
+      if (!q) return true;
+      const name = String(c.full_name || "").toLowerCase();
+      const company = String(c.company_name || "").toLowerCase();
+      return name.includes(q) || company.includes(q);
+    });
+
+    if (!rows.length) {
+      $("tbody").innerHTML = `<tr><td colspan="4" class="muted">No contacts.</td></tr>`;
+      return;
+    }
+
+    $("tbody").innerHTML = rows.map(c => {
+      const player = playerNameById(c.player_id);
+      const phoneEmail = [c.phone, c.email].filter(Boolean).join(" / ");
+      return `
+        <tr data-id="${c.id}">
+          <td>
+            <div style="font-weight:800;">${escapeHtml(c.full_name)}</div>
+            ${c.company_name ? `<div class="muted">${escapeHtml(c.company_name)}</div>` : ""}
+          </td>
+          <td>${escapeHtml(c.contact_type || "")}</td>
+          <td>${player ? escapeHtml(player) : `<span class="muted">—</span>`}</td>
+          <td>${phoneEmail ? escapeHtml(phoneEmail) : `<span class="muted">—</span>`}</td>
+        </tr>`;
+    }).join("");
+
+    $("tbody").querySelectorAll("tr[data-id]").forEach(tr => {
+      tr.addEventListener("click", () => openEditor(tr.getAttribute("data-id")));
+    });
+  }
+
+  async function openEditor(id) {
+    setMsg("", "");
+    const { data, error } = await supabase
+      .from("contacts")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error) return setMsg("", "Load contact failed: " + error.message);
+
+    $("editorTitle").textContent = "Edit Contact";
+    $("contact_id").value = data.id;
+    $("full_name").value = data.full_name || "";
+    $("contact_type").value = data.contact_type || "";
+    $("phone").value = data.phone || "";
+    $("email").value = data.email || "";
+    $("player_id").value = data.player_id || "";
+    $("relationship").value = data.relationship || "";
+    $("company_name").value = data.company_name || "";
+    $("sponsor_level").value = data.sponsor_level || "";
+    $("logo_source").value = data.logo_source || "";
+    $("sponsor_message").value = data.sponsor_message || "";
+    updateRelationshipRequiredUI();
+  }
+
+  async function saveContact() {
+    setMsg("", "");
+    const payload = getEditorPayload();
+    const err = validatePayload(payload);
+    if (err) return setMsg("", err);
+
+    $("btnSave").disabled = true;
+    try {
+      // upsert needs a unique key; id works (uuid). New contact has id=null → insert.
+      const { data, error } = await supabase
+        .from("contacts")
+        .upsert(payload, { onConflict: "id" })
+        .select("id")
+        .single();
+
+      if (error) throw error;
+
+      setMsg("Saved ✅", "");
+      await loadContacts();
+
+      // if we were in a prefill->next flow, offer to go back
+      const back = safeNext(next);
+      if (prefill && back) {
+        $("backWrap").style.display = "block";
+        $("lnkBack").href = back;
+        $("lnkBack").textContent = "Return";
+      }
+
+      // keep editor open on saved record
+      if (data?.id) await openEditor(data.id);
+
+    } catch (e) {
+      setMsg("", "Save failed: " + (e.message || JSON.stringify(e)));
+    }
+    $("btnSave").disabled = false;
+  }
+
+  async function deleteContact() {
+    setMsg("", "");
+    const id = $("contact_id").value;
+    if (!id) return setMsg("", "Select a contact to delete.");
+    if (!confirm("Delete this contact?")) return;
+
+    $("btnDelete").disabled = true;
+    try {
+      const { error } = await supabase.from("contacts").delete().eq("id", id);
+      if (error) throw error;
+      setMsg("Deleted ✅", "");
+      clearEditor();
+      await loadContacts();
+    } catch (e) {
+      setMsg("", "Delete failed: " + (e.message || JSON.stringify(e)));
+    }
+    $("btnDelete").disabled = false;
+  }
+
+  $("btnNew").addEventListener("click", clearEditor);
+  $("btnClear").addEventListener("click", clearEditor);
+  $("btnRefresh").addEventListener("click", async ()=>{ await loadPlayers(); await loadContacts(); });
+  $("btnSave").addEventListener("click", saveContact);
+  $("btnDelete").addEventListener("click", deleteContact);
+  $("search").addEventListener("input", renderList);
+
+  $("btnSignOut").addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    window.location.replace(ADMIN_INDEX_URL);
+  });
+
+  // init
+  document.addEventListener("DOMContentLoaded", async () => {
+    currentUser = await requireAuth();
+    if (!currentUser) return;
+
+    $("whoami").textContent = currentUser.email || currentUser.id;
+
+    await loadPlayers();
+    await loadContacts();
+    clearEditor();
+
+    if (prefill) {
+      $("full_name").value = prefill;
+      $("full_name").focus();
+    }
+  });
+</script>
+</body>
+</html>

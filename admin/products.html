@@ -23,31 +23,14 @@
 <body>
   <h1>Admin — Products</h1>
   <div style="margin-bottom:12px;">
-    <a href="orders.html">→ Manage Orders</a>
+    <a href="index.html">→ Admin Menu</a>
   </div>
-  <div id="authArea" class="form-card">
-    <div id="signedOut">
-      <h3>Sign in</h3>
-      <div style="max-width:420px;">
-        <label>Email</label>
-        <input id="email" type="text" />
-        <label>Password</label>
-        <input id="password" type="password" />
-        <div style="margin-top:8px;">
-          <button id="btnSignIn" class="btn btn-primary">Sign in</button>
-        </div>
-        <p class="muted">You must sign in with the admin user you added in Supabase.</p>
-      </div>
-    </div>
-
-    <div id="signedIn" class="hidden">
-      <div class="row" style="justify-content:space-between;">
-        <div>
-          <strong id="whoami"></strong>
-        </div>
-        <div class="row">
-          <button id="btnSignOut" class="btn small">Sign out</button>
-        </div>
+    <div class="form-card">
+    <div class="row" style="justify-content:space-between;">
+      <div><strong id="whoami"></strong></div>
+      <div class="row">
+        <a class="btn small" href="index.html">Admin Menu</a>
+        <button id="btnSignOut" class="btn small">Sign out</button>
       </div>
     </div>
   </div>
@@ -104,6 +87,9 @@
 
   <!-- Include Supabase JS v2 -->
   <script type="module">
+
+    // after: const supabase = createClient(...)
+
     // === REPLACE THESE TWO with your project's values ===
     const SUPABASE_URL = "https://oaxwmguhucxaucpyofil.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_jD2x3piN7xnCIjca94gYFA_zzkbjS7T";
@@ -119,7 +105,19 @@
         const parts = window.location.pathname.split("/").filter(Boolean);
         return parts.length ? `/${parts[0]}` : "";
     }
-    const BASE = getRepoBasePath();                 // "/team-store"
+
+    const BASE = getRepoBasePath();
+    const ADMIN_INDEX_URL = `${BASE}/admin/index.html`;
+    
+    function buildNext() {
+      return encodeURIComponent(window.location.pathname + window.location.search);
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      window.location.replace(`${ADMIN_INDEX_URL}?next=${buildNext()}`);
+    }
+
     const ADMIN_PRODUCTS_URL = `${BASE}/admin/products.html`;
     const ADMIN_ORDERS_URL   = `${BASE}/admin/orders.html`;
     
@@ -142,40 +140,19 @@
     }
 
     function updateAuthUI() {
-      if (currentUser) {
-        $("signedOut").classList.add("hidden");
-        $("signedIn").classList.remove("hidden");
-        $("app").classList.remove("hidden");
-        $("whoami").textContent = currentUser.email || currentUser.id;
-        loadProducts();
-      } else {
-        $("signedOut").classList.remove("hidden");
-        $("signedIn").classList.add("hidden");
-        $("app").classList.add("hidden");
+      if (!currentUser) {
+        const next = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.replace(`${ADMIN_INDEX_URL}?next=${next}`);
+        return;
       }
+
+      $("whoami").textContent = currentUser.email || currentUser.id;
+      $("app").classList.remove("hidden");
+      loadProducts();
     }
 
     // sign in/out
-    $("btnSignIn").addEventListener("click", async () => {
-      const email = $("email").value.trim();
-      const password = $("password").value;
-      $("btnSignIn").disabled = true;
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      $("btnSignIn").disabled = false;
-      if (error) return alert("Sign-in error: " + error.message);
-        const next = new URLSearchParams(window.location.search).get("next");
 
-        // allow only same-site relative paths, and preserve repo base if needed
-        if (next && !next.includes("://")) {
-        if (next.startsWith("/")) {
-            window.location.href = next; // e.g. "/team-store/admin/orders.html"
-        } else {
-            // e.g. "admin/orders.html" -> "/team-store/admin/orders.html"
-            window.location.href = `${BASE}/${next.replace(/^\/+/, "")}`;
-        }
-        }
-      // onAuth callback will update UI
-    });
 
     $("btnSignOut").addEventListener("click", async () => {
       await supabase.auth.signOut();
@@ -349,7 +326,7 @@
       $("btnNew").disabled = true;
       $("btnSave").disabled = false;
       // wire sign-in via Enter key on password
-      $("password").addEventListener("keydown", e => { if (e.key === "Enter") $("btnSignIn").click(); });
+     
 
       // wire new/edit buttons availability after auth
       supabase.auth.onAuthStateChange(() => {
