@@ -91,53 +91,43 @@
     // after: const supabase = createClient(...)
 
     // === REPLACE THESE TWO with your project's values ===
+    // === PROJECT VALUES ===
     const SUPABASE_URL = "https://oaxwmguhucxaucpyofil.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_jD2x3piN7xnCIjca94gYFA_zzkbjS7T";
-    // ====================================================
+    // ======================
 
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // helpers
+    // helpers — MUST be defined before anything calls loadProducts
+    const $ = (id) => document.getElementById(id);
+    const tbody = () => $("productsTable").querySelector("tbody");
 
     function getRepoBasePath() {
-        const parts = window.location.pathname.split("/").filter(Boolean);
-        return parts.length ? `/${parts[0]}` : "";
+      const parts = window.location.pathname.split("/").filter(Boolean);
+      return parts.length ? `/${parts[0]}` : "";
     }
 
     const BASE = getRepoBasePath();
-    const ADMIN_INDEX_URL = `${BASE}/admin/index.html`;
-    
+    const ADMIN_INDEX_URL    = `${BASE}/admin/index.html`;
+    const ADMIN_PRODUCTS_URL = `${BASE}/admin/products.html`;
+    const ADMIN_ORDERS_URL   = `${BASE}/admin/orders.html`;
+
     function buildNext() {
       return encodeURIComponent(window.location.pathname + window.location.search);
     }
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      window.location.replace(`${ADMIN_INDEX_URL}?next=${buildNext()}`);
-    } else {
-      // everything that currently runs after the guard goes here
-      await loadProducts();
-    }
-
-    const ADMIN_PRODUCTS_URL = `${BASE}/admin/products.html`;
-    const ADMIN_ORDERS_URL   = `${BASE}/admin/orders.html`;
-    
-    const $ = id => document.getElementById(id);
-    const tbody = () => $("productsTable").querySelector("tbody");
 
     let products = [];
     let currentUser = null;
     let selectedCategory = "";
 
-    // --- Auth handlers ---
+    /* ================= AUTH ================= */
 
     async function requireAdmin() {
       const { data: { user } } = await supabase.auth.getUser();
+
       if (!user) {
-        const next = encodeURIComponent(window.location.pathname + window.location.search);
-        window.location.replace(`${ADMIN_INDEX_URL}?next=${next}`);
+        window.location.replace(`${ADMIN_INDEX_URL}?next=${buildNext()}`);
         return false;
       }
 
@@ -150,7 +140,7 @@
       if (error || !data) {
         alert("Not authorized.");
         await supabase.auth.signOut();
-        window.location.replace(`${ADMIN_INDEX_URL}?next=${encodeURIComponent(window.location.pathname)}`);
+        window.location.replace(`${ADMIN_INDEX_URL}?next=${buildNext()}`);
         return false;
       }
 
@@ -159,8 +149,9 @@
 
     async function initAuth() {
       const { data: { user } } = await supabase.auth.getUser();
-      currentUser = user;
+      currentUser = user ?? null;
       await updateAuthUI();
+
       supabase.auth.onAuthStateChange((_event, session) => {
         currentUser = session?.user ?? null;
         updateAuthUI();
@@ -169,21 +160,26 @@
 
     async function updateAuthUI() {
       if (!currentUser) {
-        const next = encodeURIComponent(window.location.pathname + window.location.search);
-        window.location.replace(`${ADMIN_INDEX_URL}?next=${next}`);
+        window.location.replace(`${ADMIN_INDEX_URL}?next=${buildNext()}`);
         return;
       }
 
-      // ensure admin membership (RLS on products usually depends on this)
       const ok = await requireAdmin();
       if (!ok) return;
 
-      $("whoami").textContent = currentUser.email || currentUser.id;
-      $("app").classList.remove("hidden");
-      $("btnNew").disabled = false;   // re-enable once authed
+      const who = $("whoami");
+      if (who) who.textContent = currentUser.email || currentUser.id;
+
+      const app = $("app");
+      if (app) app.classList.remove("hidden");
+
       await loadProducts();
     }
 
+    // start auth flow
+    initAuth();
+
+/* ======================================== */
     // sign in/out
 
 
