@@ -116,6 +116,7 @@
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       window.location.replace(`${ADMIN_INDEX_URL}?next=${buildNext()}`);
+      return;
     }
 
     const ADMIN_PRODUCTS_URL = `${BASE}/admin/products.html`;
@@ -129,26 +130,56 @@
     let selectedCategory = "";
 
     // --- Auth handlers ---
+
+    async function requireAdmin() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        const next = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.replace(`${ADMIN_INDEX_URL}?next=${next}`);
+        return false;
+      }
+
+      const { data, error } = await supabase
+        .from("admin_users")
+        .select("user_id")
+        .eq("user_id", user.id)
+        .single();
+
+      if (error || !data) {
+        alert("Not authorized.");
+        await supabase.auth.signOut();
+        window.location.replace(`${ADMIN_INDEX_URL}?next=${encodeURIComponent(window.location.pathname)}`);
+        return false;
+      }
+
+      return true;
+    }
+
     async function initAuth() {
       const { data: { user } } = await supabase.auth.getUser();
       currentUser = user;
-      updateAuthUI();
+      await updateAuthUI();
       supabase.auth.onAuthStateChange((_event, session) => {
         currentUser = session?.user ?? null;
         updateAuthUI();
       });
     }
 
-    function updateAuthUI() {
+    async function updateAuthUI() {
       if (!currentUser) {
         const next = encodeURIComponent(window.location.pathname + window.location.search);
         window.location.replace(`${ADMIN_INDEX_URL}?next=${next}`);
         return;
       }
 
+      // ensure admin membership (RLS on products usually depends on this)
+      const ok = await requireAdmin();
+      if (!ok) return;
+
       $("whoami").textContent = currentUser.email || currentUser.id;
       $("app").classList.remove("hidden");
-      loadProducts();
+      $("btnNew").disabled = false;   // re-enable once authed
+      await loadProducts();
     }
 
     // sign in/out
