@@ -388,15 +388,11 @@
 
     try {
       // inclusive end: use end+1 day for lt
-      const endDt = new Date(end + "T00:00:00");
-      endDt.setDate(endDt.getDate() + 1);
-      const endPlus = endDt.toISOString().slice(0,10);
-
       const { data, error } = await supabase
         .from("transactions")
         .select("txn_type,category,amount,txn_date")
         .gte("txn_date", start)
-        .lt("txn_date", endPlus);
+        .lte("txn_date", end);
 
       if (error) throw error;
 
