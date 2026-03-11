@@ -1,204 +1,221 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Admin Dashboard</title>
-
-<style>
-body {
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  margin: 0;
-  background: #f6f7fb;
-}
-
-header {
-  background: #111;
-  color: #fff;
-  padding: 16px 20px;
-  font-weight: 700;
-}
-
-main {
-  max-width: 900px;
-  margin: 30px auto;
-  padding: 0 16px;
-}
-
-.card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 12px rgba(0,0,0,.06);
-  margin-bottom: 20px;
-}
-
-input {
-  width: 100%;
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  margin-top: 8px;
-}
-
-button {
-  margin-top: 12px;
-  padding: 10px 14px;
-  border: 0;
-  border-radius: 8px;
-  background: #111;
-  color: #fff;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-button.secondary {
-  background: #e5e5e5;
-  color: #111;
-}
-
-.grid {
-  display: grid;
-  gap: 14px;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-}
-
-.menu-card {
-  padding: 16px;
-  border: 1px solid #eee;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: .15s;
-}
-
-.menu-card:hover {
-  background: #fafafa;
-}
-
-.error {
-  color: #b00020;
-  margin-top: 10px;
-}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin:0; background:#f6f7fb; color:#111; }
+    header { padding:16px 18px; background:#111; color:#fff; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    header h1 { font-size:16px; margin:0; font-weight:800; }
+    main { max-width: 960px; margin: 20px auto; padding: 0 14px; }
+    .card { background:#fff; border-radius:12px; padding:16px; box-shadow:0 2px 12px rgba(0,0,0,.06); margin-bottom:14px; }
+    label { display:block; font-size:12px; color:#444; margin: 8px 0 4px; }
+    input { width:100%; padding:10px; border:1px solid #ddd; border-radius:10px; box-sizing:border-box; }
+    button { border:0; background:#111; color:#fff; padding:10px 14px; border-radius:10px; font-weight:800; cursor:pointer; }
+    button.secondary { background:#e9eaef; color:#111; }
+    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .grid { display:grid; gap:12px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+    .tile { padding:14px; border:1px solid #eee; border-radius:12px; cursor:pointer; background:#fff; }
+    .tile:hover { background:#fafafa; }
+    .muted { color:#666; font-size:12px; }
+    .hidden { display:none; }
+    .err { color:#b00020; font-size:13px; margin-top:10px; white-space:pre-wrap; }
+    .pill { display:inline-block; padding:3px 10px; border-radius:999px; background:#eef0ff; color:#2a2f77; font-size:12px; }
+  </style>
 </head>
 <body>
 
 <header>
-  Admin
+  <h1>Admin</h1>
+  <div class="row">
+    <span class="pill" id="whoamiPill">Signed out</span>
+    <button id="btnSignOut" class="secondary hidden">Sign out</button>
+  </div>
 </header>
 
 <main>
+  <!-- LOGIN -->
+  <section id="loginCard" class="card">
+    <div style="font-weight:900;">Sign in</div>
+    <div class="muted">Use the admin email + password you created in Supabase.</div>
 
-<div id="loginCard" class="card">
-  <h2>Admin Login</h2>
-  <label>Enter Admin Passcode</label>
-  <input type="password" id="passcodeInput" />
-  <button id="loginBtn">Login</button>
-  <div id="loginError" class="error"></div>
-</div>
+    <label>Email</label>
+    <input id="email" type="text" autocomplete="username" />
 
-<div id="menuCard" class="card" style="display:none;">
-  <h2>Admin Menu</h2>
-  <div class="grid">
-    <div class="menu-card" data-link="/admin/orders.html">Orders</div>
-    <div class="menu-card" data-link="/admin/products.html">Products</div>
-    <div class="menu-card" data-link="/admin/finance.html">Finance</div>
-    <div class="menu-card" data-link="/admin/contacts.html">Contacts</div>
-    <div class="menu-card" data-link="/admin/players.html">Players</div>
-  </div>
-  <button class="secondary" id="logoutBtn">Log Out</button>
-</div>
+    <label>Password</label>
+    <input id="password" type="password" autocomplete="current-password" />
 
+    <div class="row" style="margin-top:12px;">
+      <button id="btnSignIn">Sign in</button>
+      <span class="muted" id="loginHint"></span>
+    </div>
+
+    <div id="loginErr" class="err"></div>
+  </section>
+
+  <!-- MENU -->
+  <section id="menuCard" class="card hidden">
+    <div class="row" style="justify-content:space-between;">
+      <div>
+        <div style="font-weight:900;">Admin Menu</div>
+        <div class="muted">Pick a page.</div>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top:12px;">
+      <div class="tile" data-link="products">Products</div>
+      <div class="tile" data-link="orders">Orders</div>
+      <div class="tile" data-link="finance">Finance</div>
+      <div class="tile" data-link="contacts">Contacts</div>
+      <div class="tile" data-link="players">Players</div>
+    </div>
+  </section>
 </main>
 
-<script>
-const SUPABASE_URL = "https://oaxwmguhucxaucpyofil.supabase.co";
+<script type="module">
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-const ADMIN_OK_KEY = "admin_ok";
-const ADMIN_TOKEN_KEY = "admin_token";
+  // matches your products.html values
+  const SUPABASE_URL = "https://oaxwmguhucxaucpyofil.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_jD2x3piN7xnCIjca94gYFA_zzkbjS7T";
 
-const loginCard = document.getElementById("loginCard");
-const menuCard = document.getElementById("menuCard");
-const loginBtn = document.getElementById("loginBtn");
-const logoutBtn = document.getElementById("logoutBtn");
-const errorDiv = document.getElementById("loginError");
-const passInput = document.getElementById("passcodeInput");
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const params = new URLSearchParams(location.search);
-const next = params.get("next");
+  const $ = (id) => document.getElementById(id);
 
-function isValidNext(url) {
-  return url && url.startsWith("/admin/");
-}
+  function getRepoBasePath() {
+    const parts = window.location.pathname.split("/").filter(Boolean);
+    return parts.length ? `/${parts[0]}` : "";
+  }
+  const BASE = getRepoBasePath();
 
-function showMenu() {
-  loginCard.style.display = "none";
-  menuCard.style.display = "block";
-}
+  const ADMIN_PRODUCTS_URL = `${BASE}/admin/products.html`;
+  const ADMIN_ORDERS_URL   = `${BASE}/admin/orders.html`;
+  const ADMIN_FINANCE_URL  = `${BASE}/admin/finance.html`;
+  const ADMIN_CONTACTS_URL = `${BASE}/admin/contacts.html`;
+  const ADMIN_PLAYERS_URL  = `${BASE}/admin/players.html`;
 
-function showLogin() {
-  loginCard.style.display = "block";
-  menuCard.style.display = "none";
-}
+  const params = new URLSearchParams(window.location.search);
+  const next = params.get("next"); // may be "/team-store/admin/orders.html"
 
-if (sessionStorage.getItem(ADMIN_OK_KEY) === "1") {
-  showMenu();
-} else {
-  showLogin();
-}
+  function safeNext(n) {
+    if (!n) return null;
+    if (n.includes("://")) return null;
+    // allow either "/admin/..." or "/repo/admin/..."
+    if (n.startsWith("/admin/")) return `${BASE}${n}`;
+    if (n.startsWith(`${BASE}/admin/`)) return n;
+    return null;
+  }
 
-loginBtn.addEventListener("click", async () => {
-  errorDiv.textContent = "";
-  const passcode = passInput.value.trim();
-  if (!passcode) return;
+  function showLogin() {
+    $("loginCard").classList.remove("hidden");
+    $("menuCard").classList.add("hidden");
+    $("btnSignOut").classList.add("hidden");
+    $("whoamiPill").textContent = "Signed out";
+  }
 
-  loginBtn.disabled = true;
+  function showMenu(user) {
+    $("loginCard").classList.add("hidden");
+    $("menuCard").classList.remove("hidden");
+    $("btnSignOut").classList.remove("hidden");
+    $("whoamiPill").textContent = user?.email || user?.id || "Signed in";
+  }
 
-  try {
-    const resp = await fetch(`${SUPABASE_URL}/functions/v1/admin-login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ passcode })
-    });
+  async function isAdmin(user) {
+    // same pattern as orders.html requireAdmin()
+    const { data, error } = await supabase
+      .from("admin_users")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .single();
+    return !(error || !data);
+  }
 
-    if (!resp.ok) {
-      throw new Error("Invalid passcode");
-    }
+  async function init() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { showLogin(); return; }
 
-    const data = await resp.json();
-
-    if (!data.ok || !data.token) {
-      throw new Error("Invalid login");
-    }
-
-    sessionStorage.setItem(ADMIN_OK_KEY, "1");
-    sessionStorage.setItem(ADMIN_TOKEN_KEY, data.token);
-
-    if (isValidNext(next)) {
-      location.replace(next);
+    if (!(await isAdmin(user))) {
+      alert("Not authorized.");
+      await supabase.auth.signOut();
+      showLogin();
       return;
     }
 
-    showMenu();
+    showMenu(user);
 
-  } catch (err) {
-    errorDiv.textContent = "Login failed.";
+    // if we came here from a redirect, go back after auth
+    const dest = safeNext(next);
+    if (dest) window.location.replace(dest);
   }
 
-  loginBtn.disabled = false;
-});
+  $("btnSignIn").addEventListener("click", async () => {
+    $("loginErr").textContent = "";
+    $("loginHint").textContent = "";
+    const email = $("email").value.trim();
+    const password = $("password").value;
 
-logoutBtn.addEventListener("click", () => {
-  sessionStorage.removeItem(ADMIN_OK_KEY);
-  sessionStorage.removeItem(ADMIN_TOKEN_KEY);
-  location.reload();
-});
+    if (!email || !password) {
+      $("loginErr").textContent = "Email and password required.";
+      return;
+    }
 
-document.querySelectorAll(".menu-card").forEach(card => {
-  card.addEventListener("click", () => {
-    location.href = card.getAttribute("data-link");
+    $("btnSignIn").disabled = true;
+    $("loginHint").textContent = "Signing in…";
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    $("btnSignIn").disabled = false;
+    $("loginHint").textContent = "";
+
+    if (error) {
+      $("loginErr").textContent = "Sign-in error: " + error.message;
+      return;
+    }
+
+    const user = data?.user;
+    if (!user) {
+      $("loginErr").textContent = "Sign-in failed.";
+      return;
+    }
+
+    if (!(await isAdmin(user))) {
+      alert("Not authorized.");
+      await supabase.auth.signOut();
+      showLogin();
+      return;
+    }
+
+    // redirect if next is provided
+    const dest = safeNext(next);
+    if (dest) window.location.replace(dest);
+    else showMenu(user);
   });
-});
+
+  $("password").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") $("btnSignIn").click();
+  });
+
+  $("btnSignOut").addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    window.location.replace(`${BASE}/admin/index.html`);
+  });
+
+  document.querySelectorAll(".tile").forEach(t => {
+    t.addEventListener("click", () => {
+      const key = t.getAttribute("data-link");
+      const map = {
+        products: ADMIN_PRODUCTS_URL,
+        orders: ADMIN_ORDERS_URL,
+        finance: ADMIN_FINANCE_URL,
+        contacts: ADMIN_CONTACTS_URL,
+        players: ADMIN_PLAYERS_URL,
+      };
+      window.location.href = map[key] || ADMIN_PRODUCTS_URL;
+    });
+  });
+
+  init();
 </script>
 
 </body>
