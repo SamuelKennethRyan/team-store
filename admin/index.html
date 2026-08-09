@@ -73,13 +73,11 @@
   </section>
 </main>
 
+<script src="../config.js"></script>
 <script type="module">
-  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.29.0/+esm";
 
-  // matches your products.html values
-  const SUPABASE_URL = "https://oaxwmguhucxaucpyofil.supabase.co";
-  const SUPABASE_ANON_KEY = "sb_publishable_jD2x3piN7xnCIjca94gYFA_zzkbjS7T";
-
+  const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.APP_CONFIG;
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const $ = (id) => document.getElementById(id);

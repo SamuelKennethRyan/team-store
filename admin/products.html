@@ -54,7 +54,7 @@
     <table id="productsTable" aria-live="polite">
       <thead>
         <tr>
-          <th>SKU</th><th>Name</th><th>Price</th><th>Category</th><th>Active</th><th>Sort</th><th>Actions</th>
+          <th>Image</th><th>SKU</th><th>Name</th><th>Price</th><th>Category</th><th>Active</th><th>Sort</th><th>Actions</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -68,7 +68,17 @@
       <label>Price (e.g. 12.50)</label><input id="prod_price" type="number" step="0.01" />
       <label>Category</label><input id="prod_category" type="text" />
       <label>Sizes (comma-separated)</label><input id="prod_sizes" type="text" placeholder="S,M,L or leave blank" />
-      <label>Image URL</label><input id="prod_image_url" type="text" />
+
+      <label>Image</label>
+      <div class="row" style="align-items:flex-start;">
+        <img id="prod_image_preview" src="" alt="" style="width:100px;height:100px;object-fit:cover;border-radius:8px;background:#f0f0f0;display:none;" />
+        <div style="flex:1;">
+          <input id="prod_image_file" type="file" accept="image/*" />
+          <div class="muted" id="uploadStatus" style="margin-top:4px;"></div>
+          <input id="prod_image_url" type="text" placeholder="Or paste an image URL directly" style="margin-top:6px;" />
+        </div>
+      </div>
+
       <label>Personalized?</label>
       <select id="prod_personalized"><option value="false">No</option><option value="true">Yes</option></select>
       <label>Number Required?</label>
@@ -86,17 +96,11 @@
   </div>
 
   <!-- Include Supabase JS v2 -->
+  <script src="../config.js"></script>
   <script type="module">
 
-    // after: const supabase = createClient(...)
-
-    // === REPLACE THESE TWO with your project's values ===
-    // === PROJECT VALUES ===
-    const SUPABASE_URL = "https://oaxwmguhucxaucpyofil.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_jD2x3piN7xnCIjca94gYFA_zzkbjS7T";
-    // ======================
-
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.29.0/+esm";
+    const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.APP_CONFIG;
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // helpers — MUST be defined before anything calls loadProducts
@@ -154,6 +158,7 @@
 
       supabase.auth.onAuthStateChange((_event, session) => {
         currentUser = session?.user ?? null;
+        $("btnNew").disabled = !currentUser;
         updateAuthUI();
       });
     }
@@ -176,11 +181,9 @@
       await loadProducts();
     }
 
-    // start auth flow
-    initAuth();
-
 /* ======================================== */
     // sign in/out
+    // (auth flow starts in the DOMContentLoaded handler below)
 
 
     $("btnSignOut").addEventListener("click", async () => {
@@ -224,7 +227,8 @@
       const tb = tbody(); tb.innerHTML = "";
       filtered.forEach(p => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${escapeHtml(p.sku)}</td>
+        tr.innerHTML = `<td>${p.image_url ? `<img src="${escapeHtml(p.image_url)}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:6px;background:#f0f0f0;" onerror="this.style.display='none'">` : ""}</td>
+          <td>${escapeHtml(p.sku)}</td>
           <td style="max-width:280px;">${escapeHtml(p.name)}</td>
           <td>$${Number(p.price).toFixed(2)}</td>
           <td>${escapeHtml(p.category||"")}</td>
@@ -253,8 +257,23 @@
       });
     }
 
+    function updateImagePreview() {
+      const url = $("prod_image_url").value.trim();
+      const img = $("prod_image_preview");
+      if (url) {
+        img.src = url;
+        img.style.display = "";
+      } else {
+        img.src = "";
+        img.style.display = "none";
+      }
+    }
+    $("prod_image_url").addEventListener("input", updateImagePreview);
+
     function openEditor(p = null) {
       $("editor").classList.remove("hidden");
+      $("prod_image_file").value = "";
+      $("uploadStatus").textContent = "";
       if (!p) {
         $("editorTitle").textContent = "New Product";
         $("prod_id").value = "";
@@ -269,6 +288,7 @@
         $("prod_sort").value = 0;
         $("prod_active").value = "true";
         $("btnDelete").classList.add("hidden");
+        updateImagePreview();
         return;
       }
       $("editorTitle").textContent = "Edit Product";
@@ -284,7 +304,34 @@
       $("prod_sort").value = p.sort_order || 0;
       $("prod_active").value = p.active ? "true" : "false";
       $("btnDelete").classList.remove("hidden");
+      updateImagePreview();
     }
+
+    $("prod_image_file").addEventListener("change", async () => {
+      const file = $("prod_image_file").files[0];
+      if (!file) return;
+
+      const status = $("uploadStatus");
+      status.textContent = "Uploading…";
+
+      try {
+        const sku = ($("prod_sku").value || "product").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-") || "product";
+        const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+        const path = `${sku}-${Date.now()}.${ext}`;
+
+        const { error: upErr } = await supabase.storage
+          .from("product-images")
+          .upload(path, file, { upsert: true, contentType: file.type || undefined });
+        if (upErr) throw upErr;
+
+        const { data: pub } = supabase.storage.from("product-images").getPublicUrl(path);
+        $("prod_image_url").value = pub.publicUrl;
+        updateImagePreview();
+        status.textContent = "Uploaded ✅ — click Save to apply.";
+      } catch (err) {
+        status.textContent = "Upload failed: " + (err.message || JSON.stringify(err));
+      }
+    });
 
     $("btnNew").addEventListener("click", () => openEditor(null));
     $("btnCancel").addEventListener("click", () => $("editor").classList.add("hidden"));
@@ -351,18 +398,9 @@
 
     // init wiring
     document.addEventListener("DOMContentLoaded", async () => {
-      await initAuth();
       $("btnNew").disabled = true;
       $("btnSave").disabled = false;
-      // wire sign-in via Enter key on password
-     
-
-      // wire new/edit buttons availability after auth
-      supabase.auth.onAuthStateChange(() => {
-        $("btnNew").disabled = !currentUser;
-      });
-
-      $("btnNew").addEventListener("click", () => openEditor(null));
+      await initAuth();
       // initial category filter change handled by renderCategoryFilter
     });
   </script>

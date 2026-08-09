@@ -75,6 +75,10 @@
             <button id="printBatchBtn" class="secondary" disabled>Print Batch</button>
             <span id="batchHint" class="muted"></span>
         </div>
+        <div class="row" style="margin: 10px 0;">
+            <button id="markAllDeliveredBtn" class="secondary" disabled>Mark ALL orders delivered</button>
+            <span id="markAllHint" class="muted"></span>
+        </div>
 
       </div>
 
@@ -114,14 +118,11 @@
   </aside>
 </main>
 
+<script src="../config.js"></script>
 <script type="module">
   import { createClient } from "https://esm.sh/@supabase/supabase-js@2.29.0";
 
-  // ✅ Fill these in
-  const SUPABASE_URL = "https://oaxwmguhucxaucpyofil.supabase.co";
-  const SUPABASE_ANON_KEY = "sb_publishable_jD2x3piN7xnCIjca94gYFA_zzkbjS7T";
-
-
+  const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.APP_CONFIG;
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     function getRepoBasePath() {
@@ -183,6 +184,8 @@
     createBatchBtn: document.getElementById("createBatchBtn"),
     printBatchBtn: document.getElementById("printBatchBtn"),
     batchHint: document.getElementById("batchHint"),
+    markAllDeliveredBtn: document.getElementById("markAllDeliveredBtn"),
+    markAllHint: document.getElementById("markAllHint"),
 
   };
 
@@ -263,6 +266,12 @@
     if (createEligible.length) msgs.push(`${createEligible.length} order(s) eligible to batch`);
     if (printableBatches.size) msgs.push(`${printableBatches.size} batch(es) printable`);
     els.batchHint.textContent = msgs.join(" • ");
+
+    const notYetDelivered = state.groups.filter(g => !g.status?.delivered);
+    els.markAllDeliveredBtn.disabled = notYetDelivered.length === 0;
+    els.markAllHint.textContent = notYetDelivered.length
+      ? `${notYetDelivered.length} order(s) not yet marked delivered`
+      : "All orders are marked delivered";
     }
 
 
@@ -836,8 +845,22 @@ els.printBatchBtn.addEventListener("click", async ()=>{
   await loadOrders();
 });
 
+els.markAllDeliveredBtn.addEventListener("click", async () => {
+  const targets = state.groups.filter(g => !g.status?.delivered);
+  if (!targets.length) return;
 
+  if (!confirm(`Mark all ${targets.length} not-yet-delivered order(s) as delivered? This cannot be undone in bulk.`)) return;
 
+  els.markAllDeliveredBtn.disabled = true;
+  let done = 0;
+  for (const g of targets) {
+    els.markAllHint.textContent = `Marking delivered… ${done}/${targets.length}`;
+    await pushStatusUpdate(g.order_id, { delivered: true });
+    done++;
+  }
+
+  await loadOrders();
+});
 
 (async () => {
   const ok = await requireAdmin();

@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Admin — Players</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; margin:0; background:#f6f7fb; color:#111; }
+    header { padding:16px 18px; background:#111; color:#fff; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    header h1 { font-size:16px; margin:0; font-weight:800; }
+    header a { color:#fff; text-decoration:none; opacity:.9; font-size:13px; }
+    main { max-width:1200px; margin:14px auto; padding:0 14px; display:grid; grid-template-columns: 1fr 1fr; gap:14px; }
+    @media (max-width: 980px){ main{ grid-template-columns: 1fr; } }
+    .card { background:#fff; border:1px solid #eee; border-radius:10px; padding:12px; box-shadow: 0 1px 10px rgba(0,0,0,.06); }
+    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    label { display:block; font-size:12px; color:#444; margin:6px 0 4px; }
+    input[type=text], input[type=number], input[type=date], select { width:100%; padding:8px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box; }
+    .btn { padding:8px 12px; cursor:pointer; border:1px solid #ccc; background:#fff; border-radius:8px; font-weight:700; }
+    .btn-primary { background:#0b74de; color:#fff; border-color:#0b6ad1; }
+    .btn-danger { color:#a00; border-color:#f0c6c6; }
+    .muted { color:#666; font-size:0.9rem; }
+    .ok { color:#0a7a2f; font-size: 0.95rem; white-space:pre-wrap; }
+    .err { color:#b00020; font-size: 0.95rem; white-space:pre-wrap; }
+    table { width:100%; border-collapse:collapse; margin-top:10px; }
+    th,td { border-bottom:1px solid #eee; padding:8px; text-align:left; font-size: 13px; vertical-align:top; }
+    th { background:#fafafa; font-size:12px; color:#444; }
+    tr:hover td { background:#fcfcff; }
+    .pill { display:inline-block; padding:2px 8px; border-radius:999px; background:#eef0ff; color:#2a2f77; font-size:11px; }
+    .cake { display:inline-block; padding:2px 8px; border-radius:999px; background:#fff1d6; color:#8a5a00; font-size:11px; }
+    .small { font-size: 12px; padding:6px 8px; }
+    .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    @media (max-width: 980px){ .grid2{ grid-template-columns: 1fr; } }
+    .req { color:#b00020; font-weight:800; }
+    .bdayList li { margin:6px 0; font-size:13px; }
+    .bdayList { list-style:none; padding-left:0; margin:8px 0 0 0; }
+  </style>
+</head>
+
+<body>
+<header>
+  <h1>Admin — Players</h1>
+  <div class="row">
+    <a id="lnkMenu" href="#">Admin Menu</a>
+    <a id="lnkProducts" href="#" style="opacity:.85;">Products</a>
+    <a id="lnkOrders" href="#" style="opacity:.85;">Orders</a>
+    <a id="lnkFinance" href="#" style="opacity:.85;">Finance</a>
+    <a id="lnkContacts" href="#" style="opacity:.85;">Contacts</a>
+    <button id="btnSignOut" class="btn small" style="border-color:#444; background:#111; color:#fff;">Sign out</button>
+  </div>
+</header>
+
+<main>
+  <!-- LEFT: list -->
+  <section class="card">
+    <div class="row" style="justify-content:space-between;">
+      <div>
+        <div style="font-weight:900;">Players</div>
+        <div class="muted">Search and click a row to edit.</div>
+      </div>
+      <div class="row">
+        <span class="pill" id="whoami">…</span>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <div style="flex:1; min-width:240px;">
+        <label>Search</label>
+        <input id="search" type="text" placeholder="Name or number…" />
+      </div>
+      <div>
+        <button id="btnRefresh" class="btn">Refresh</button>
+      </div>
+      <div>
+        <button id="btnNew" class="btn btn-primary">+ New</button>
+      </div>
+    </div>
+
+    <div id="listErr" class="err" style="margin-top:10px;"></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:14%;">#</th>
+          <th style="width:36%;">Name</th>
+          <th style="width:26%;">Birthday</th>
+          <th style="width:24%;">Active</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr><td colspan="4" class="muted">Loading…</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div>
+    <!-- Upcoming birthdays -->
+    <section class="card" style="margin-bottom:14px;">
+      <div style="font-weight:900;">🎂 Upcoming birthdays</div>
+      <div class="muted">Next 5, based on saved birthdays.</div>
+      <ul id="bdayList" class="bdayList">
+        <li class="muted">Loading…</li>
+      </ul>
+    </section>
+
+    <!-- RIGHT: editor -->
+    <section class="card">
+      <div class="row" style="justify-content:space-between;">
+        <div>
+          <div style="font-weight:900;" id="editorTitle">New Player</div>
+        </div>
+        <div class="row">
+          <button id="btnClear" class="btn">Clear</button>
+        </div>
+      </div>
+
+      <div id="msgOk" class="ok" style="margin-top:10px;"></div>
+      <div id="msgErr" class="err" style="margin-top:10px;"></div>
+
+      <input type="hidden" id="player_id" />
+
+      <div class="grid2" style="margin-top:10px;">
+        <div>
+          <label>Full name <span class="req">*</span></label>
+          <input id="full_name" type="text" placeholder="Jamie Smith" />
+        </div>
+        <div>
+          <label>Jersey number</label>
+          <input id="player_number" type="number" min="0" placeholder="e.g. 12" />
+        </div>
+      </div>
+
+      <div class="grid2" style="margin-top:10px;">
+        <div>
+          <label>Birthday</label>
+          <input id="birthday" type="date" />
+        </div>
+        <div>
+          <label>Active</label>
+          <select id="active">
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:12px;">
+        <button id="btnSave" class="btn btn-primary">Save</button>
+        <button id="btnDelete" class="btn btn-danger" style="margin-left:auto;">Delete</button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script src="../config.js"></script>
+<script type="module">
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.29.0/+esm";
+  const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.APP_CONFIG;
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  function getRepoBasePath() {
+    const parts = window.location.pathname.split("/").filter(Boolean);
+    return parts.length ? `/${parts[0]}` : "";
+  }
+  const BASE = getRepoBasePath();
+
+  const ADMIN_INDEX_URL    = `${BASE}/admin/index.html`;
+  const ADMIN_PRODUCTS_URL = `${BASE}/admin/products.html`;
+  const ADMIN_ORDERS_URL   = `${BASE}/admin/orders.html`;
+  const ADMIN_FINANCE_URL  = `${BASE}/admin/finance.html`;
+  const ADMIN_CONTACTS_URL = `${BASE}/admin/contacts.html`;
+
+  const $ = (id) => document.getElementById(id);
+
+  $("lnkMenu").href = ADMIN_INDEX_URL;
+  $("lnkProducts").href = ADMIN_PRODUCTS_URL;
+  $("lnkOrders").href = ADMIN_ORDERS_URL;
+  $("lnkFinance").href = ADMIN_FINANCE_URL;
+  $("lnkContacts").href = ADMIN_CONTACTS_URL;
+
+  function buildNextSelf() {
+    return encodeURIComponent(window.location.pathname + window.location.search);
+  }
+
+  async function requireAuth() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      window.location.replace(`${ADMIN_INDEX_URL}?next=${buildNextSelf()}`);
+      return null;
+    }
+    return user;
+  }
+
+  let currentUser = null;
+  let players = [];
+
+  function setMsg(ok, err) {
+    $("msgOk").textContent = ok || "";
+    $("msgErr").textContent = err || "";
+  }
+  function setListErr(t) {
+    $("listErr").textContent = t || "";
+  }
+
+  function escapeHtml(s) {
+    return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  }
+
+  function clearEditor() {
+    $("editorTitle").textContent = "New Player";
+    $("player_id").value = "";
+    $("full_name").value = "";
+    $("player_number").value = "";
+    $("birthday").value = "";
+    $("active").value = "true";
+    setMsg("", "");
+  }
+
+  function getEditorPayload() {
+    const id = $("player_id").value || null;
+    const full_name = ($("full_name").value || "").trim();
+    const numRaw = ($("player_number").value || "").trim();
+    const player_number = numRaw === "" ? null : Number(numRaw);
+    const birthday = ($("birthday").value || "").trim() || null;
+    const active = $("active").value === "true";
+    return { id, full_name, player_number, birthday, active };
+  }
+
+  function validatePayload(p) {
+    if (!p.full_name) return "Full name is required.";
+    return null;
+  }
+
+  async function loadPlayers() {
+    setListErr("");
+    $("tbody").innerHTML = `<tr><td colspan="4" class="muted">Loading…</td></tr>`;
+
+    const { data, error } = await supabase
+      .from("players")
+      .select("id,full_name,player_number,birthday,active")
+      .order("full_name", { ascending: true })
+      .limit(500);
+
+    if (error) {
+      setListErr("Load failed: " + error.message);
+      $("tbody").innerHTML = `<tr><td colspan="4" class="muted">Error loading players.</td></tr>`;
+      return;
+    }
+    players = data || [];
+    renderList();
+    renderUpcomingBirthdays();
+  }
+
+  function renderList() {
+    const q = ($("search").value || "").trim().toLowerCase();
+    const rows = players.filter(p => {
+      if (!q) return true;
+      const name = String(p.full_name || "").toLowerCase();
+      const num = String(p.player_number ?? "");
+      return name.includes(q) || num.includes(q);
+    });
+
+    if (!rows.length) {
+      $("tbody").innerHTML = `<tr><td colspan="4" class="muted">No players.</td></tr>`;
+      return;
+    }
+
+    $("tbody").innerHTML = rows.map(p => `
+      <tr data-id="${p.id}">
+        <td>${p.player_number != null ? escapeHtml(p.player_number) : `<span class="muted">—</span>`}</td>
+        <td style="font-weight:700;">${escapeHtml(p.full_name)}</td>
+        <td>${p.birthday ? escapeHtml(formatDate(p.birthday)) : `<span class="muted">—</span>`}</td>
+        <td>${p.active ? "Yes" : "No"}</td>
+      </tr>`).join("");
+
+    $("tbody").querySelectorAll("tr[data-id]").forEach(tr => {
+      tr.addEventListener("click", () => openEditor(tr.getAttribute("data-id")));
+    });
+  }
+
+  function formatDate(iso) {
+    // iso is YYYY-MM-DD; display without timezone shift
+    const [y, m, d] = iso.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    return dt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  }
+
+  function renderUpcomingBirthdays() {
+    const list = $("bdayList");
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const withDays = players
+      .filter(p => p.active && p.birthday)
+      .map(p => {
+        const [, m, d] = p.birthday.split("-").map(Number);
+        let next = new Date(today.getFullYear(), m - 1, d);
+        if (next < today) next = new Date(today.getFullYear() + 1, m - 1, d);
+        const daysAway = Math.round((next - today) / 86400000);
+        return { p, daysAway, next };
+      })
+      .sort((a, b) => a.daysAway - b.daysAway)
+      .slice(0, 5);
+
+    if (!withDays.length) {
+      list.innerHTML = `<li class="muted">No birthdays saved yet.</li>`;
+      return;
+    }
+
+    list.innerHTML = withDays.map(({ p, daysAway }) => {
+      const when = daysAway === 0 ? "Today!" : daysAway === 1 ? "Tomorrow" : `in ${daysAway} days`;
+      return `<li><span class="cake">${when}</span> ${escapeHtml(p.full_name)}${p.player_number != null ? ` (#${escapeHtml(p.player_number)})` : ""}</li>`;
+    }).join("");
+  }
+
+  async function openEditor(id) {
+    setMsg("", "");
+    const { data, error } = await supabase
+      .from("players")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error) return setMsg("", "Load player failed: " + error.message);
+
+    $("editorTitle").textContent = "Edit Player";
+    $("player_id").value = data.id;
+    $("full_name").value = data.full_name || "";
+    $("player_number").value = data.player_number ?? "";
+    $("birthday").value = data.birthday || "";
+    $("active").value = data.active ? "true" : "false";
+  }
+
+  async function savePlayer() {
+    setMsg("", "");
+    const payload = getEditorPayload();
+    const err = validatePayload(payload);
+    if (err) return setMsg("", err);
+
+    $("btnSave").disabled = true;
+    try {
+      const { data, error } = await supabase
+        .from("players")
+        .upsert(payload, { onConflict: "id" })
+        .select("id")
+        .single();
+
+      if (error) throw error;
+
+      setMsg("Saved ✅", "");
+      await loadPlayers();
+      if (data?.id) await openEditor(data.id);
+    } catch (e) {
+      setMsg("", "Save failed: " + (e.message || JSON.stringify(e)));
+    }
+    $("btnSave").disabled = false;
+  }
+
+  async function deletePlayer() {
+    setMsg("", "");
+    const id = $("player_id").value;
+    if (!id) return setMsg("", "Select a player to delete.");
+    if (!confirm("Delete this player?")) return;
+
+    $("btnDelete").disabled = true;
+    try {
+      const { error } = await supabase.from("players").delete().eq("id", id);
+      if (error) throw error;
+      setMsg("Deleted ✅", "");
+      clearEditor();
+      await loadPlayers();
+    } catch (e) {
+      setMsg("", "Delete failed: " + (e.message || JSON.stringify(e)));
+    }
+    $("btnDelete").disabled = false;
+  }
+
+  $("btnNew").addEventListener("click", clearEditor);
+  $("btnClear").addEventListener("click", clearEditor);
+  $("btnRefresh").addEventListener("click", loadPlayers);
+  $("btnSave").addEventListener("click", savePlayer);
+  $("btnDelete").addEventListener("click", deletePlayer);
+  $("search").addEventListener("input", renderList);
+
+  $("btnSignOut").addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    window.location.replace(ADMIN_INDEX_URL);
+  });
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    currentUser = await requireAuth();
+    if (!currentUser) return;
+
+    $("whoami").textContent = currentUser.email || currentUser.id;
+
+    await loadPlayers();
+    clearEditor();
+  });
+</script>
+</body>
+</html>

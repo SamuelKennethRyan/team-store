@@ -72,6 +72,7 @@
 
     <!-- replace with the UMD build -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.29.0/dist/umd/supabase.min.js"></script>
+  <script src="./config.js"></script>
 
 </head>
 <body>
@@ -122,11 +123,10 @@
 </div>
 
 <script>
-/*** CONFIG — fill these in ***/
-const SUPABASE_URL = "https://oaxwmguhucxaucpyofil.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_jD2x3piN7xnCIjca94gYFA_zzkbjS7T";
+/*** CONFIG ***/
+const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.APP_CONFIG;
 const VENMO_HANDLE = "samuel-ryan-35";
-const LOGO_URL = "https://skryan18.github.io/team-store/images/logo.jpg"; // from GitHub Pages, e.g. https://.../images/logo.png
+const LOGO_URL = "https://samuelkennethryan.github.io/team-store/images/logo.jpg";
 /*** END CONFIG ***/
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);

@@ -44,6 +44,7 @@
     <a id="lnkFinance" href="#" style="opacity:.85;">Finance</a>
     <a id="lnkOrders" href="#" style="opacity:.85;">Orders</a>
     <a id="lnkProducts" href="#" style="opacity:.85;">Products</a>
+    <a id="lnkPlayers" href="#" style="opacity:.85;">Players</a>
     <button id="btnSignOut" class="btn small" style="border-color:#444; background:#111; color:#fff;">Sign out</button>
   </div>
 </header>
@@ -178,12 +179,10 @@
   </aside>
 </main>
 
+<script src="../config.js"></script>
 <script type="module">
-  // Same as products.html
-  const SUPABASE_URL = "https://oaxwmguhucxaucpyofil.supabase.co";
-  const SUPABASE_ANON_KEY = "sb_publishable_jD2x3piN7xnCIjca94gYFA_zzkbjS7T";
-
-  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.29.0/+esm";
+  const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.APP_CONFIG;
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   function getRepoBasePath() {
@@ -197,6 +196,7 @@
   const ADMIN_ORDERS_URL   = `${BASE}/admin/orders.html`;
   const ADMIN_FINANCE_URL  = `${BASE}/admin/finance.html`;
   const ADMIN_CONTACTS_URL = `${BASE}/admin/contacts.html`;
+  const ADMIN_PLAYERS_URL  = `${BASE}/admin/players.html`;
 
   const $ = (id) => document.getElementById(id);
 
@@ -204,6 +204,7 @@
   $("lnkProducts").href = ADMIN_PRODUCTS_URL;
   $("lnkOrders").href = ADMIN_ORDERS_URL;
   $("lnkFinance").href = ADMIN_FINANCE_URL;
+  $("lnkPlayers").href = ADMIN_PLAYERS_URL;
 
   // query params
   const params = new URLSearchParams(window.location.search);
