@@ -272,6 +272,7 @@
 
     function openEditor(p = null) {
       $("editor").classList.remove("hidden");
+      $("editor").scrollIntoView({ behavior: "smooth", block: "start" });
       $("prod_image_file").value = "";
       $("uploadStatus").textContent = "";
       if (!p) {
