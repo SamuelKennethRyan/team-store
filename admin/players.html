@@ -158,8 +158,11 @@
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   function getRepoBasePath() {
-    const parts = window.location.pathname.split("/").filter(Boolean);
-    return parts.length ? `/${parts[0]}` : "";
+    // e.g. /team-store/admin/orders.html -> /team-store (GitHub Pages project site)
+    // e.g. /admin/orders.html -> "" (custom domain / root-hosted site)
+    const path = window.location.pathname;
+    const idx = path.indexOf("/admin/");
+    return idx > 0 ? path.slice(0, idx) : "";
   }
   const BASE = getRepoBasePath();
 

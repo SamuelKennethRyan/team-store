@@ -126,10 +126,11 @@
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     function getRepoBasePath() {
-    // e.g. /team-store/admin/orders.html -> /team-store
-    const parts = window.location.pathname.split("/").filter(Boolean);
-    // user sites have 0 parts; project sites have 1st part = repo
-    return parts.length ? `/${parts[0]}` : "";
+    // e.g. /team-store/admin/orders.html -> /team-store (GitHub Pages project site)
+    // e.g. /admin/orders.html -> "" (custom domain / root-hosted site)
+    const path = window.location.pathname;
+    const idx = path.indexOf("/admin/");
+    return idx > 0 ? path.slice(0, idx) : "";
     }
 
     const BASE = getRepoBasePath(); // "/team-store" on your site
